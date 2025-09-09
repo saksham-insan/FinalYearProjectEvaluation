@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Final Year Project Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #6c5ce7;
+      color: white;
+      border: 10px solid #9370db;
+      box-sizing: border-box;
+    }
+    .overlay {
+      background-color: rgba(0, 0, 0, 0.5);
+      min-height: 100vh;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .university-title {
+      font-size: 36px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      color: #000;
+      padding: 20px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 600px;
+      margin-top: 20px;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .group-list button {
+      display: block;
+      width: 100%;
+      margin: 5px 0;
+      background-color: #9370db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .group-list button:hover {
+      background-color: #6a5acd;
+    }
+    input, select, textarea {
+      padding: 10px;
+      margin: 10px 0;
+      width: 100%;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background-color: #9370db;
+      color: white;
+      padding: 12px 25px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #6a5acd;
+    }
+    .hidden {
+      display: none;
+    }
+    .marquee {
+      background: #e0e0ff;
+      color: #333;
+      border-radius: 8px;
+      padding: 5px;
+      margin: 10px 0;
+    }
+    .range-value {
+      font-weight: bold;
+      color: #6c5ce7;
+    }
+    .spreadsheet-link {
+      margin-top: 10px;
+      display: block;
+      color: #6c5ce7;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+    .progress-bar {
+      background-color: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 10px 0;
+      height: 20px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0;
+      text-align: center;
+      color: white;
+      font-size: 12px;
+      line-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <header>
+      <div class="university-title">CHRIST UNIVERSITY</div>
+    </header>
+
+    <!-- Role Selection -->
+    <div class="card" id="roleSelect">
+      <h2>Select Your Role</h2>
+      <button onclick="showLogin('student')">Student</button>
+      <button onclick="showLogin('teacher')">Teacher</button>
+    </div>
+
+    <!-- Login Form -->
+    <div class="card hidden" id="loginForm">
+      <h2 id="loginTitle">Login</h2>
+
+      <!-- Student Login Fields -->
+      <div id="studentFields" class="hidden">
+        <input type="text" id="studentRegNo" placeholder="Enter Your Register Number"><br>
+        <input type="password" id="studentPassword" placeholder="Enter Password"><br>
+      </div>
+
+      <!-- Teacher Login Fields -->
+      <div id="teacherFields" class="hidden">
+        <input type="password" id="teacherPassword" placeholder="Enter Admin Password"><br>
+      </div>
+
+      <button onclick="submitLogin()">Login</button>
+      <button onclick="goBack()">Back</button>
+    </div>
+
+    <!-- Student Dashboard -->
+    <div class="card hidden" id="studentDashboard">
+      <h3>Welcome Student</h3>
+      <p>Logged in as: <span id="studentNameDisplay"></span></p>
+      <select id="studentGroupSelect">
+        <option value="">-- Select Your Group --</option>
+      </select>
+      <label for="progressRange">Project Completion: <span class="range-value" id="progressValue">0%</span></label>
+      <input type="range" id="progressRange" min="0" max="100" value="0" oninput="updateRangeValue(this.value)">
+      <button onclick="submitStudentProgress()">Submit Progress</button>
+      <div id="progressDisplay" class="hidden marquee"></div>
+      <button onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Teacher Dashboard -->
+    <div class="card hidden" id="teacherDashboard">
+      <h3>Select Class</h3>
+      <select id="classDropdown" onchange="showClassGroups()">
+        <option value="">-- Select --</option>
+        <option value="3BTCSDS">3BTCSDS</option>
+        <option value="5BTCSDS">5BTCSDS</option>
+        <option value="7BTCSDS">7BTCSDS</option>
+      </select>
+      <div id="groupList" class="group-list hidden"></div>
+      <div id="groupDetails" class="hidden"></div>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+<script>
+  let selectedRole = "";
+
+  const groupData = {
+  "5BTCSDS": {
+    1: {
+      members: [
+        { reg: "2362342", name: "Lekha Wadhwa" },
+        { reg: "2362351", name: "Padmaja Shah" },
+        { reg: "2362373", name: "Swarnim Pradhan" },
+        { reg: "2362376", name: "Tenzin Palden Bhutia" }
+      ],
+      project: "Website for AIML and DS departments",
+      guide: "Dr. Michel",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/1sL_cY99nkGt9sfK0Sa5Fqbu_57USNzkrfAPwAbFNSzY/edit?usp=sharing"
+    },
+    2: {
+      members: [
+        { reg: "2362325", name: "Drishya S Menon" },
+        { reg: "2362333", name: "Hrishikesh Romesh" },
+        { reg: "2362366", name: "Sai Bhuvana S" },
+        { reg: "2362349", name: "Nicholas Briggs" },
+        { reg: "2362378", name: "Neha Simon" }
+      ],
+      project: "ERP module for research and publications",
+      guide: "Dr. SANDEEP KUMAR",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/1sL_cY99nkGt9sfK0Sa5Fqbu_57USNzkrfAPwAbFNSzY/edit?usp=sharing"
+    },
+    3: {
+      members: [
+        { reg: "2362380", name: "Arjun Nair" },
+        { reg: "2362395", name: "Kavya Menon" },
+        { reg: "2362401", name: "Rohit Sharma" }
+      ],
+      project: "AI Chatbot for University",
+      guide: "Dr. Smith",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/some_other_link/edit?usp=sharing"
+    },
+    4: {
+      members: [
+        { reg: "2362410", name: "Anita Desai" },
+        { reg: "2362415", name: "Sunil Kumar" }
+      ],
+      project: "Data Visualization Tool",
+      guide: "Dr. Johnson",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/another_link/edit?usp=sharing"
+    },
+    5: {
+      members: [
+        { reg: "2362420", name: "Riya Singh" },
+        { reg: "2362425", name: "Vikram Patel" }
+      ],
+      project: "Mobile App for Campus Events",
+      guide: "Dr. Kumar",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link5/edit?usp=sharing"
+    },
+    6: {
+      members: [
+        { reg: "2362430", name: "Nisha Verma" },
+        { reg: "2362435", name: "Rahul Mehta" }
+      ],
+      project: "Smart Attendance System",
+      guide: "Dr. Rao",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link6/edit?usp=sharing"
+    },
+    7: {
+      members: [
+        { reg: "2362440", name: "Manish Gupta" },
+        { reg: "2362445", name: "Pooja Sharma" }
+      ],
+      project: "E-commerce Website",
+      guide: "Dr. Patel",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link7/edit?usp=sharing"
+    },
+    8: {
+      members: [
+        { reg: "2362450", name: "Anil Kumar" },
+        { reg: "2362455", name: "Sneha Joshi" }
+      ],
+      project: "Health Monitoring System",
+      guide: "Dr. Desai",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link8/edit?usp=sharing"
+    },
+    9: {
+      members: [
+        { reg: "2362460", name: "Karan Singh" },
+        { reg: "2362465", name: "Rashmi Patel" }
+      ],
+      project: "Online Learning Platform",
+      guide: "Dr. Shah",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link9/edit?usp=sharing"
+    },
+    10: {
+      members: [
+        { reg: "2362470", name: "Deepak Yadav" },
+        { reg: "2362475", name: "Neha Kapoor" }
+      ],
+      project: "Inventory Management System",
+      guide: "Dr. Singh",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link10/edit?usp=sharing"
+    },
+    11: {
+      members: [
+        { reg: "2362480", name: "Amit Sharma" },
+        { reg: "2362485", name: "Kavita Reddy" }
+      ],
+      project: "Social Networking App",
+      guide: "Dr. Reddy",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link11/edit?usp=sharing"
+    },
+    12: {
+      members: [
+        { reg: "2362490", name: "Sonal Gupta" },
+        { reg: "2362495", name: "Vivek Jain" }
+      ],
+      project: "Smart Home Automation",
+      guide: "Dr. Mehta",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link12/edit?usp=sharing"
+    },
+    13: {
+      members: [
+        { reg: "2362500", name: "Rajesh Kumar" },
+        { reg: "2362505", name: "Pallavi Singh" }
+      ],
+      project: "Online Food Delivery System",
+      guide: "Dr. Verma",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link13/edit?usp=sharing"
+    },
+    14: {
+      members: [
+        { reg: "2362510", name: "Suresh Reddy" },
+        { reg: "2362515", name: "Anjali Mishra" }
+      ],
+      project: "Vehicle Tracking System",
+      guide: "Dr. Nair",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link14/edit?usp=sharing"
+    },
+    15: {
+      members: [
+        { reg: "2362520", name: "Neeraj Kumar" },
+        { reg: "2362525", name: "Divya Shah" }
+      ],
+      project: "Online Banking System",
+      guide: "Dr. Thomas",
+      progress: 0,
+      marks: "",
+      sheet: "https://docs.google.com/spreadsheets/d/link15/edit?usp=sharing"
+    }
+  }
+};
+
+  function showLogin(role) {
+    selectedRole = role;
+    document.getElementById("roleSelect").classList.add("hidden");
+    document.getElementById("loginForm").classList.remove("hidden");
+    document.getElementById("loginTitle").innerText = Login as ${role};
+    if (role === "student") {
+      document.getElementById("studentFields").classList.remove("hidden");
+      document.getElementById("teacherFields").classList.add("hidden");
+    } else {
+      document.getElementById("studentFields").classList.add("hidden");
+      document.getElementById("teacherFields").classList.remove("hidden");
+    }
+  }
+
+  function goBack() {
+    document.getElementById("roleSelect").classList.remove("hidden");
+    document.getElementById("loginForm").classList.add("hidden");
+    document.getElementById("studentFields").classList.add("hidden");
+    document.getElementById("teacherFields").classList.add("hidden");
+    document.getElementById("classDropdown").selectedIndex = 0;
+    document.getElementById("groupList").innerHTML = "";
+    document.getElementById("groupDetails").classList.add("hidden");
+  }
+
+  function submitLogin() {
+    if (selectedRole === "student") {
+      const regNo = document.getElementById("studentRegNo").value.trim();
+      const password = document.getElementById("studentPassword").value.trim();
+      let found = false;
+      Object.keys(groupData["5BTCSDS"]).forEach(groupNo => {
+        if (groupData["5BTCSDS"][groupNo].members.find(m=>m.reg===regNo) && password === "123") {
+          found = true;
+          document.getElementById("loginForm").classList.add("hidden");
+          document.getElementById("studentDashboard").classList.remove("hidden");
+          document.getElementById("studentNameDisplay").innerText = regNo;
+          const groupSelect = document.getElementById("studentGroupSelect");
+          groupSelect.innerHTML = '<option value="">-- Select Your Group --</option>';
+          Object.keys(groupData["5BTCSDS"]).forEach(groupNo => {
+            groupSelect.innerHTML += <option value="${groupNo}">Group ${groupNo}</option>;
+          });
+        }
+      });
+      if (!found) {
+        alert("Incorrect credentials.");
+      }
+    } else if (selectedRole === "teacher") {
+      const teacherPassword = document.getElementById("teacherPassword").value.trim();
+      if (teacherPassword === "123") {
+        document.getElementById("loginForm").classList.add("hidden");
+        document.getElementById("teacherDashboard").classList.remove("hidden");
+        document.getElementById("classDropdown").selectedIndex = 0;
+        document.getElementById("groupList").innerHTML = "";
+        document.getElementById("groupDetails").classList.add("hidden");
+      } else {
+        alert("Incorrect teacher password.");
+      }
+    }
+  }
+
+  function updateRangeValue(value) {
+    document.getElementById("progressValue").innerText = value + "%";
+  }
+
+  function submitStudentProgress() {
+    const groupNo = document.getElementById("studentGroupSelect").value;
+    const progress = document.getElementById("progressRange").value;
+    if (groupNo) {
+      groupData["5BTCSDS"][groupNo].progress = progress;
+      alert(Progress for Group ${groupNo} updated to ${progress}%);
+    } else {
+      alert("Please select your group.");
+    }
+  }
+
+  function showClassGroups() {
+    const selectedClass = document.getElementById("classDropdown").value;
+    const groupListDiv = document.getElementById("groupList");
+    groupListDiv.innerHTML = "";
+    document.getElementById("groupDetails").classList.add("hidden");
+    if (groupData[selectedClass]) {
+      groupListDiv.classList.remove("hidden");
+      for (const group in groupData[selectedClass]) {
+        const btn = document.createElement("button");
+        btn.innerText = Group ${group};
+        btn.onclick = () => showGroupDetails(selectedClass, group);
+        groupListDiv.appendChild(btn);
+      }
+    } else {
+      groupListDiv.classList.add("hidden");
+    }
+  }
+
+  function showGroupDetails(className, groupNo) {
+    const group = groupData[className][groupNo];
+    const groupDetailsDiv = document.getElementById("groupDetails");
+    const progressColor = group.progress < 50 ? '#e74c3c' : group.progress < 80 ? '#f39c12' : '#2ecc71';
+    const membersList = group.members.map(m=>${m.reg} - ${m.name}).join("<br>");
+    groupDetailsDiv.innerHTML = `<h3>Group ${groupNo}</h3>
+      <p><strong>Members:</strong><br>${membersList}</p>
+      <p><strong>Project Title:</strong> ${group.project}</p>
+      <p><strong>Guide:</strong> ${group.guide}</p>
+      <p><strong>Progress:</strong></p>
+      <div class="progress-bar"><div class="progress-bar-fill" style="width:${group.progress}%; background-color:${progressColor}">${group.progress}%</div></div>
+      <input type='text' placeholder='Enter Marks' value='${group.marks}' onchange='updateMarks("${className}", "${groupNo}", this.value)'>
+      <a class='spreadsheet-link' href='${group.sheet}' target='_blank'>View Group Spreadsheet</a>`;
+    groupDetailsDiv.classList.remove("hidden");
+  }
+
+  function updateMarks(className, groupNo, marks) {
+    groupData[className][groupNo].marks = marks;
+    alert(Marks for Group ${groupNo} updated to ${marks});
+  }
+
+  function logout() {
+    selectedRole = "";
+    document.getElementById("studentDashboard").classList.add("hidden");
+    document.getElementById("teacherDashboard").classList.add("hidden");
+    document.getElementById("groupList").classList.add("hidden");
+    document.getElementById("groupDetails").classList.add("hidden");
+    document.getElementById("progressDisplay").classList.add("hidden");
+    document.getElementById("roleSelect").classList.remove("hidden");
+  }
+</script>
+</body>
+</html>
